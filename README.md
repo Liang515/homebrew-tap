@@ -3,6 +3,7 @@
 [Argus](https://github.com/Liang515/argus) is a terminal workspace for coding agents on macOS.
 
 ```sh
+brew trust --tap liang515/tap   # Homebrew asks you to trust third-party taps once
 brew install --cask liang515/tap/argus
 ```
 

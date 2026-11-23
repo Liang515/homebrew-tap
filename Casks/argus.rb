@@ -12,8 +12,9 @@ cask "argus" do
     strategy :github_latest
   end
 
-  # Argus 會自己更新（分頁列的「新版」按鈕），Homebrew 不必搶著升級
+  # Argus updates itself from inside the app
   auto_updates true
+  depends_on :macos
 
   app "Argus.app"
 
