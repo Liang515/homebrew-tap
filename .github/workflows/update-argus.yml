@@ -1,0 +1,40 @@
+name: Update Argus cask
+
+# 每 6 小時看一次 Argus 有沒有新的正式版，有就更新 Casks/argus.rb 的版本與檢查碼。
+# 只改這個 repo，用內建的 GITHUB_TOKEN 就夠，不需要另外的 token。
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the latest Argus release
+        id: latest
+        run: |
+          tag=$(curl -fsSL https://api.github.com/repos/Liang515/argus/releases/latest | jq -r .tag_name)
+          version="${tag#v}"
+          current=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/argus.rb)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "最新正式版 $version，目前 cask 是 $current"
+
+      - name: Update the cask
+        if: steps.latest.outputs.version != steps.latest.outputs.current
+        env:
+          VERSION: ${{ steps.latest.outputs.version }}
+        run: |
+          url="https://github.com/Liang515/argus/releases/download/v${VERSION}/Argus_${VERSION}_universal.dmg"
+          sha=$(curl -fsSL "$url" | sha256sum | cut -d' ' -f1)
+          sed -i "s/^  version \".*\"/  version \"${VERSION}\"/; s/^  sha256 \".*\"/  sha256 \"${sha}\"/" Casks/argus.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update Argus to ${VERSION}"
+          git push
