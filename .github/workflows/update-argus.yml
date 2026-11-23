@@ -18,9 +18,15 @@ jobs:
 
       - name: Check the latest Argus release
         id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          tag=$(curl -fsSL https://api.github.com/repos/Liang515/argus/releases/latest | jq -r .tag_name)
+          set -euo pipefail
+          # 用 token 查，未登入的 API 在共用機器上常被限流（403）
+          tag=$(gh api repos/Liang515/argus/releases/latest --jq .tag_name)
           version="${tag#v}"
+          # 查不到或格式怪就停，不要寫壞 cask
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "版本號不對：'$tag'"; exit 1; }
           current=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/argus.rb)
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "current=$current" >> "$GITHUB_OUTPUT"
@@ -31,8 +37,13 @@ jobs:
         env:
           VERSION: ${{ steps.latest.outputs.version }}
         run: |
+          set -euo pipefail
           url="https://github.com/Liang515/argus/releases/download/v${VERSION}/Argus_${VERSION}_universal.dmg"
-          sha=$(curl -fsSL "$url" | sha256sum | cut -d' ' -f1)
+          curl -fsSL -o argus.dmg "$url"
+          # dmg 至少幾 MB，太小代表下載失敗
+          [ "$(stat -c %s argus.dmg)" -gt 1000000 ] || { echo "dmg 太小"; exit 1; }
+          sha=$(sha256sum argus.dmg | cut -d' ' -f1)
+          rm argus.dmg
           sed -i "s/^  version \".*\"/  version \"${VERSION}\"/; s/^  sha256 \".*\"/  sha256 \"${sha}\"/" Casks/argus.rb
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
