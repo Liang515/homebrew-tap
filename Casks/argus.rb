@@ -1,6 +1,6 @@
 cask "argus" do
-  version "0.1.27"
-  sha256 "4687e8fa34e612c4d342623f79816f84aa60bc18a2b8403a5335b14a8155bc36"
+  version "0.1.28"
+  sha256 "b4c013995c00347042b7431d237315618e9444a0ac3c45602fd579eaab96e5c2"
 
   url "https://github.com/Liang515/argus/releases/download/v#{version}/Argus_#{version}_universal.dmg"
   name "Argus"
